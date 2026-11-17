@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Шмяк-квест — тест трекинга</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #111; color: #eee;
+      font-family: system-ui, sans-serif; overflow: hidden; }
+    #video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    #start { position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px; background: #111; z-index: 10; }
+    #start button { font-size: 24px; padding: 16px 40px; border-radius: 12px;
+      border: none; background: #e8b04b; color: #222; cursor: pointer; }
+    #hud { position: fixed; top: 12px; left: 12px; right: 12px; z-index: 5;
+      display: flex; justify-content: space-between; font-size: 14px; opacity: .85; }
+    #reticle { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 50vw; height: 50vh; border: 2px dashed #e8b04b; border-radius: 12px;
+      z-index: 4; pointer-events: none; display: none; }
+    #reticle span { position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
+      white-space: nowrap; font-size: 13px; background: rgba(0,0,0,.6); padding: 2px 8px;
+      border-radius: 6px; }
+    #overlay { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%);
+      z-index: 5; background: rgba(0,0,0,.78); border: 2px solid #e8b04b;
+      border-radius: 16px; padding: 18px 28px; font-size: 20px; text-align: center;
+      display: none; max-width: 86vw; }
+    #overlay small { display: block; margin-top: 8px; font-size: 13px; color: #aaa; }
+    #ghost { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      z-index: 4; pointer-events: none; display: none; opacity: .9;
+      border: 2px dashed #e8b04b; border-radius: 6px; }
+    #picker { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+      display: flex; flex-wrap: wrap; gap: 6px; padding: 10px;
+      background: rgba(0,0,0,.55); justify-content: center; }
+    #picker button { font-size: 13px; padding: 8px 12px; border-radius: 999px;
+      border: 1px solid #555; background: #222; color: #ccc; cursor: pointer; }
+    #picker button.on { background: #e8b04b; color: #222; border-color: #e8b04b; }
+  </style>
+</head>
+<body>
+  <video id="video" playsinline muted></video>
+
+  <div id="start">
+    <div>Наведи камеру на любую из картинок-свидетелей</div>
+    <button id="startBtn">Начать</button>
+  </div>
+
+  <div id="hud">
+    <span id="status">—</span>
+    <span id="frames">—</span>
+  </div>
+
+  <div id="overlay">
+    Обложка распознана!
+    <small id="overlayInfo"></small>
+  </div>
+
+  <div id="reticle"><span>держи обложку здесь, заполняя ~треть</span></div>
+
+  <img id="ghost" alt="">
+
+  <div id="picker" style="display:none;"></div>
+
+  <script type="module">
+import{Controller as e}from"./lib/mindar-image.prod.js";const t=document.getElementById("video"),n=document.getElementById("start"),d=document.getElementById("startBtn"),a=document.getElementById("status"),i=document.getElementById("frames"),o=document.getElementById("overlay"),s=document.getElementById("overlayInfo"),l=document.getElementById("ghost"),c=document.getElementById("picker"),r=["Шмяк","зайчик","слон","олень"];let y=-1;function m(e){[...c.children].forEach(t=>t.classList.toggle("on",Number(t.dataset.idx)===e)),y=e,-1===e?(I.interestedTargetIndex=-1,l.style.display="none",document.getElementById("reticle").style.display="block"):(I.interestedTargetIndex=e,document.getElementById("reticle").style.display="none",-1!==y&&(l.src="./markers/"+(y+1)+".png",l.style.height=.45*window.innerHeight+"px",l.style.display="block"))}let g=0,p=-1e3,u=0,x=!1,E=-1;const I=new e({inputWidth:640,inputHeight:480,onUpdate:e=>{"updateMatrix"===e.type?(p=g,u++,E=e.targetIndex):"processDone"===e.type&&(g++,u>=8&&!x&&(x=!0,l.style.display="none",o.style.display="block",s.textContent="стабильно "+u+" кадров",a.textContent="НАЙДЕНО: "+(r[E]??"#"+E)),x&&g-p>20&&(x=!1,o.style.display="none",-1!==I.interestedTargetIndex&&(l.style.display="block"),a.textContent="потеряно"),i.textContent="видно: "+u+" кадров",u=0)}});d.addEventListener("click",async()=>{try{await I.addImageTargets("./targets.mind");const e=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}},audio:!1});t.srcObject=e,t.setAttribute("playsinline",""),await t.play(),n.style.display="none",c.style.display="flex",function(){const e=document.createElement("button");e.textContent="свободный поиск",e.dataset.idx="-1",e.addEventListener("click",()=>m(-1)),c.appendChild(e),r.forEach((e,t)=>{const n=document.createElement("button");n.textContent=e,n.dataset.idx=String(t),n.addEventListener("click",()=>m(t)),c.appendChild(n)}),m(-1)}(),a.textContent="ищем...",await I.processVideo(t)}catch(e){a.textContent="ошибка: "+e.message,console.error(e)}});
+</script>
+</body>
+</html>
