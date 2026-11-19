@@ -3,64 +3,76 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Шмяк-квест — тест трекинга</title>
+  <title>Дело Ночного Кого-то</title>
   <style>
     html, body { margin: 0; height: 100%; background: #111; color: #eee;
       font-family: system-ui, sans-serif; overflow: hidden; }
-    #video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    #start { position: fixed; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 16px; background: #111; z-index: 10; }
-    #start button { font-size: 24px; padding: 16px 40px; border-radius: 12px;
-      border: none; background: #e8b04b; color: #222; cursor: pointer; }
-    #hud { position: fixed; top: 12px; left: 12px; right: 12px; z-index: 5;
-      display: flex; justify-content: space-between; font-size: 14px; opacity: .85; }
-    #reticle { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-      width: 50vw; height: 50vh; border: 2px dashed #e8b04b; border-radius: 12px;
-      z-index: 4; pointer-events: none; display: none; }
-    #reticle span { position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
-      white-space: nowrap; font-size: 13px; background: rgba(0,0,0,.6); padding: 2px 8px;
-      border-radius: 6px; }
-    #overlay { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-      z-index: 5; background: rgba(0,0,0,.78); border: 2px solid #e8b04b;
-      border-radius: 16px; padding: 18px 28px; font-size: 20px; text-align: center;
-      display: none; max-width: 86vw; }
-    #overlay small { display: block; margin-top: 8px; font-size: 13px; color: #aaa; }
-    #ghost { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-      z-index: 4; pointer-events: none; display: none; opacity: .9;
-      border: 2px dashed #e8b04b; border-radius: 6px; }
-    #picker { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
-      display: flex; flex-wrap: wrap; gap: 6px; padding: 10px;
-      background: rgba(0,0,0,.55); justify-content: center; }
-    #picker button { font-size: 13px; padding: 8px 12px; border-radius: 999px;
-      border: 1px solid #555; background: #222; color: #ccc; cursor: pointer; }
-    #picker button.on { background: #e8b04b; color: #222; border-color: #e8b04b; }
+    #video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .9; }
+    #dim { position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 3; display: none;
+      align-items: center; justify-content: center; font-size: 22px; text-align: center; padding: 0 24px; }
+    #hud { position: fixed; top: 8px; left: 12px; right: 12px; z-index: 6;
+      display: flex; justify-content: space-between; font-size: 13px; opacity: .8; }
+    #nav { position: fixed; top: 36px; left: 0; right: 0; z-index: 6; display: flex;
+      gap: 6px; padding: 8px 10px; overflow-x: auto; }
+    #nav button { flex: 0 0 auto; font-size: 13px; padding: 6px 12px; border-radius: 999px;
+      border: 1px solid #555; background: rgba(20,20,20,.75); color: #ccc; cursor: pointer; }
+    #nav button.on { background: #e8b04b; color: #222; border-color: #e8b04b; }
+    #nav button.locked { opacity: .35; }
+    #panel { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%);
+      z-index: 5; width: min(92vw, 480px); display: flex; flex-direction: column;
+      gap: 14px; align-items: center; }
+    #hint { text-align: center; font-size: 18px; background: rgba(0,0,0,.65);
+      border-radius: 14px; padding: 14px 20px; }
+    #playBtn { font-size: 22px; padding: 14px 44px; border-radius: 14px; border: none;
+      background: #e8b04b; color: #222; cursor: pointer; }
+    #playBtn:disabled { opacity: .45; }
+    #wordWrap { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    #cells { display: flex; gap: 8px; }
+    .cell { width: 38px; height: 48px; border: 2px solid #e8b04b; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+      background: rgba(0,0,0,.6); text-transform: uppercase; }
+    #wordInput { width: 220px; font-size: 24px; text-align: center; letter-spacing: 6px;
+      padding: 10px; border-radius: 12px; border: 2px solid #e8b04b; background: rgba(0,0,0,.6);
+      color: #eee; text-transform: uppercase; }
+    #birthday { font-size: 26px; color: #ffd97a; text-align: center; background: rgba(0,0,0,.65);
+      border-radius: 14px; padding: 16px 24px; }
+    #selfTestWrap { position: fixed; bottom: 8px; left: 12px; z-index: 6; }
+    #errBanner { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%);
+      z-index: 99; background: rgba(120,0,0,.92); color: #fff; font-size: 15px;
+      padding: 16px 20px; border-radius: 12px; display: none; max-width: 90vw;
+      white-space: pre-wrap; }
+    #selfTestBtn { font-size: 12px; padding: 6px 12px; background: #333; color: #999;
+      border: 1px solid #444; border-radius: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
   <video id="video" playsinline muted></video>
-
-  <div id="start">
-    <div>Наведи камеру на любую из картинок-свидетелей</div>
-    <button id="startBtn">Начать</button>
-  </div>
+  <div id="dim">Этот свидетель уже найден</div>
 
   <div id="hud">
-    <span id="status">—</span>
-    <span id="frames">—</span>
+    <span id="status"></span>
+    <span id="version"></span>
   </div>
 
-  <div id="overlay">
-    <b id="overlayName">—</b>
+  <div id="errBanner"></div>
+
+  <div id="nav"></div>
+
+  <div id="panel">
+    <div id="hint"></div>
+    <button id="playBtn" style="display:none;">▶ Прослушать</button>
+    <div id="wordWrap" style="display:none;">
+      <div id="cells"></div>
+      <input id="wordInput" type="text" autocomplete="off" autocapitalize="characters">
+    </div>
+    <div id="birthday" style="display:none;">С днём рождения! :*</div>
   </div>
 
-  <div id="reticle"><span>держи картинку здесь</span></div>
-
-  <img id="ghost" alt="">
-
-  <div id="picker" style="display:none;"></div>
+  <div id="selfTestWrap">
+  </div>
 
   <script type="module">
-import{Controller as e}from"./lib/mindar-image.prod.js";window.addEventListener("error",e=>{const t=document.getElementById("status");t&&(t.textContent="JS-ошибка: "+e.message)}),window.addEventListener("unhandledrejection",e=>{const t=document.getElementById("status");t&&(t.textContent="promise-ошибка: "+(e.reason&&e.reason.message?e.reason.message:String(e.reason)))});const t=document.getElementById("video"),n=document.getElementById("start"),d=document.getElementById("startBtn"),o=document.getElementById("status"),a=document.getElementById("frames"),i=document.getElementById("overlay"),s=document.getElementById("overlayName"),l=document.getElementById("ghost"),r=document.getElementById("picker"),c=["Шмяк","зайчик","белочка","кот в очках","енот","слон","тигр","лисятки","олень"];let m=-1;function g(e){h&&([...r.children].forEach(t=>t.classList.toggle("on",Number(t.dataset.idx)===e)),m=e,-1===e?(h.interestedTargetIndex=-1,l.style.display="none",document.getElementById("reticle").style.display="block"):(h.interestedTargetIndex=e,document.getElementById("reticle").style.display="none",-1!==m&&(l.src="./markers/"+(m+1)+".png",l.style.height=.45*window.innerHeight+"px",l.style.display="block")))}let y=new Set,u=[],p=!1,h=null,x=null;d.addEventListener("click",async()=>{try{const d=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720},aspectRatio:{ideal:16/9}},audio:!1});t.srcObject=d,t.setAttribute("playsinline",""),await t.play(),t.videoWidth||await new Promise(e=>t.onloadedmetadata=e);const m=640,E=Math.round(m*t.videoHeight/t.videoWidth);h=function(t,n){return new e({inputWidth:t,inputHeight:n,maxTrack:9,onUpdate:e=>{if("updateMatrix"===e.type){if(null===e.worldMatrix)return;y.add(e.targetIndex)}else if("processDone"===e.type){u.push(y),u.length>30&&u.shift(),y=new Set;const e=new Map;for(const t of u)for(const n of t)e.set(n,(e.get(n)||0)+1);const t=u.reduce((e,t)=>e+(t.size>0?1:0),0);let n=-1,d=0;for(const[t,o]of e)o>d&&(d=o,n=t);!p&&t>=4&&(p=!0,l.style.display="none",i.style.display="block"),p&&(t<3?(p=!1,i.style.display="none",-1!==h.interestedTargetIndex&&(l.style.display="block")):s.textContent=c[n]??"#"+n),a.textContent="v1.0.0-20261118-1421"}}})}(m,E),o.textContent=`грузим маркеры... (видео ${t.videoWidth}x${t.videoHeight})`,await h.addImageTargets("./targets.mind"),n.style.display="none",r.style.display="flex",function(){const e=document.createElement("button");e.textContent="свободный поиск",e.dataset.idx="-1",e.addEventListener("click",()=>g(-1)),r.appendChild(e),c.forEach((e,t)=>{const n=document.createElement("button");n.textContent=e,n.dataset.idx=String(t),n.addEventListener("click",()=>g(t)),r.appendChild(n)}),g(-1)}(),x=document.createElement("canvas"),x.width=m,x.height=E;const f=x.getContext("2d"),v=()=>{t.videoWidth&&f.drawImage(t,0,0,m,E),requestAnimationFrame(v)};v(),o.textContent="",await h.processVideo(x)}catch(e){o.textContent="ошибка: "+e.message,i.style.display="block",overlayInfo.textContent="NotAllowedError"===e.name?"камера запрещена — разреши в настройках Safari для этого сайта":e.message,console.error(e)}});
+import{Controller as e}from"./lib/mindar-image.prod.js";document.getElementById("version").textContent="v1.0.0-20261119-0354";const t=e=>{const t=document.getElementById("errBanner");t&&(t.textContent=e,t.style.display="block");const n=document.getElementById("status");n&&(n.textContent=e)};window.addEventListener("error",e=>t("JS-ошибка: "+e.message+" | "+(e.filename||"")+":"+(e.lineno||""))),window.addEventListener("unhandledrejection",e=>t("ошибка: "+(e.reason&&e.reason.message?e.reason.message:String(e.reason))));const n=[{name:"Интро",audio:"audio/intro.wav"},{name:"Шмяк",target:0,audio:"audio/shmyak1.mp3",hint:"Наведите камеру на детектива, чтобы поговорить с ним"},{name:"Зайчик",target:1,word:"ХВОСТ",audio:"audio/zaichik.wav"},{name:"Белочка",target:2,word:"МЯУКАЕТ",audio:"audio/belochka.wav"},{name:"Кот",target:3,word:"ЛЕТИТ",audio:"audio/kot.mp3"},{name:"Енот",target:4,word:"В",audio:"audio/enot.mp3"},{name:"Слон",target:5,word:"ГРОМКИМ",audio:"audio/slon.mp3"},{name:"Тигр",target:6,word:"И",audio:"audio/tigr.mp3"},{name:"Лисятки",target:7,word:"ПЕНУ",audio:"audio/lisyata.wav"},{name:"Олень",target:8,word:"БАСОМ",audio:"audio/olen.mp3"},{name:"Финал",target:0,audio:"audio/shmyak2.mp3"}],a=n.filter(e=>e.word).map(e=>e.word).join(" "),d="quest-state-v1";let o=function(){try{const e=JSON.parse(localStorage.getItem(d)||"null");if(e&&Array.isArray(e.done)&&e.done.length===n.length)return e}catch(e){}return{done:n.map(()=>!1),scanned:n.map(()=>!1),played:n.map(()=>!1),words:n.map(()=>null)}}();function i(){localStorage.setItem(d,JSON.stringify(o))}const l=()=>o.done.findIndex(e=>!e);let s=null;document.getElementById("version").addEventListener("pointerdown",()=>{s=setTimeout(()=>{localStorage.removeItem(d),location.reload()},5e3)}),document.getElementById("version").addEventListener("pointerup",()=>clearTimeout(s));const r=document.getElementById("video"),c=document.getElementById("dim"),m=document.getElementById("nav"),u=document.getElementById("hint"),g=document.getElementById("playBtn"),y=document.getElementById("wordWrap"),p=document.getElementById("cells"),h=document.getElementById("birthday"),w=document.getElementById("wordInput"),v=document.getElementById("status");let f=0,E=null,x=null,I=!1,b=null,C=-1,B=new Set,k=[],L=0;async function S(){if(!I){I=!0;try{const t=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720},aspectRatio:{ideal:16/9}},audio:!1});r.srcObject=t,r.setAttribute("playsinline",""),await r.play(),r.videoWidth||await new Promise(e=>r.onloadedmetadata=e);const n=640,a=Math.round(n*r.videoHeight/r.videoWidth);x=document.createElement("canvas"),x.width=n,x.height=a;const d=x.getContext("2d"),l=()=>{r.videoWidth&&d.drawImage(r,0,0,n,a),requestAnimationFrame(l)};l(),E=new e({inputWidth:n,inputHeight:a,maxTrack:9,onUpdate:e=>{if("updateMatrix"===e.type){if(null===e.worldMatrix)return;B.add(e.targetIndex)}else"processDone"===e.type&&(k.push(B),k.length>30&&k.shift(),B=new Set,L=k.reduce((e,t)=>e+(C>=0&&t.has(C)?1:0),0),C>=0&&!o.scanned[f]&&L>=4&&function(e){o.scanned[e]=!0,i(),A();try{T(e)}catch(e){}}(f))}}),await E.addImageTargets("targets.mind"),E.interestedTargetIndex=C,await E.processVideo(x)}catch(e){v.textContent="ошибка камеры: "+e.message}}}function T(e){b&&(b.pause(),b.onended=null),b=new Audio(n[e].audio),g.disabled=!0,g.textContent="⏳ Идёт прослушивание...",b.onended=()=>{g.disabled=!1,g.textContent="▶ Прослушать",o.played[e]=!0,i(),0!==e||o.done[0]||(o.done[0]=!0,f=l(),i()),1!==e||o.done[1]||(o.done[1]=!0,f=l(),i()),10!==e||o.done[10]||(o.done[10]=!0,i()),A()},b.play().catch(()=>{g.disabled=!1,g.textContent="▶ Прослушать"})}const M=e=>e.trim().toUpperCase().replace(/Ё/g,"Е");function A(){const e=n[f],t=f===l();c.style.display="none",u.style.display="none",g.style.display="none",y.style.display="none",h.style.display="none",w.blur(),m.innerHTML="";const d=l();for(let e=0;e<=d;e++){const t=document.createElement("button");t.textContent=String(e+1),t.classList.toggle("on",e===f),t.addEventListener("click",()=>{f=e,A()}),m.appendChild(t)}0===f?(u.textContent="Этой ночью по дому кто-то ходил и что-то делал. Включите звук и нажмите «Прослушать».",u.style.display="block",g.style.display="block",g.disabled=!1,o.played[0]||(g.textContent="▶ Прослушать")):o.scanned[f]?(10===f||t||(c.style.display="flex"),g.style.display="block",g.disabled=!1,g.textContent=o.played[f]?"▶ Прослушать ещё раз":"▶ Прослушать",e.word&&!o.done[f]&&o.played[f]?(u.textContent="Какое слово повторял свидетель?",u.style.display="block",function(){const e=n[f].word;y.style.display="flex",p.innerHTML="";for(let t=0;t<e.length;t++){const e=document.createElement("div");e.className="cell",p.appendChild(e)}w.value="",w.maxLength=e.length,setTimeout(()=>w.focus(),100)}()):10===f&&o.done[10]&&(h.style.display="block")):(t&&S(),C=e.target,E&&(E.interestedTargetIndex=e.target),u.textContent=10===f?"Вернитесь к детективу, чтобы узнать, что означает: "+a:1===f?e.hint:"Наведите камеру на свидетеля, чтобы поговорить с ним",u.style.display="block")}w.addEventListener("input",()=>{const e=n[f].word,t=M(w.value).slice(0,e.length);[...p.children].forEach((e,n)=>{e.textContent=t[n]||""}),t.length===e.length&&(t===M(e)?(o.words[f]=e,o.done[f]=!0,f=l(),i(),A()):(w.value="",p.style.animation="none",p.offsetHeight,p.style.animation="shake .3s"))}),g.addEventListener("click",()=>T(f));try{A()}catch(e){t("render: "+(e&&e.message?e.message:String(e)))}
 </script>
 </body>
 </html>
